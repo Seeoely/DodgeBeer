@@ -1,0 +1,106 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using TMPro;
+
+public class ThrowBehavior : MonoBehaviour
+{
+    private InputAction throwAction;
+    private PlayerInput playerInput;
+    
+    [SerializeField] private float minThrowForce = 5f;
+    [SerializeField] private float maxThrowForce = 100f;
+    [SerializeField] private float chargeTime = 1f; // Time to reach max throw force
+    [SerializeField] private Image chargeBar; // Reference to UI Slider
+    [SerializeField] private bool showChargeBar = true; // Option to toggle charge bar visibility
+
+    [SerializeField] public Slider drunkenessBar;
+    
+    [SerializeField] public TextMeshProUGUI chargeText;
+    [SerializeField] public TextMeshProUGUI drunkenessText;
+
+    public GameObject Bottle;
+    
+    private float currentChargeTime = 0f;
+    private bool isCharging = false;
+
+    private void Awake()
+    {
+        playerInput = GetComponent<PlayerInput>();
+        throwAction = playerInput.actions["Throw"];
+        
+        // Hide charge bar initially
+        if (chargeBar != null)
+        {
+            chargeBar.gameObject.SetActive(false);
+        }
+    }
+
+    void Update()
+    {
+        HandleInputs();
+    }
+
+    private void HandleInputs()
+    {
+        // Start charging when button is pressed
+        if (throwAction.WasPressedThisFrame())
+        {
+            UnityEngine.Debug.Log("Throw button pressed");
+            isCharging = true;
+            currentChargeTime = 0f;
+            
+            // Show charge bar when starting to charge
+            if (chargeBar != null && showChargeBar)
+            {
+                chargeBar.gameObject.SetActive(true);
+                chargeBar.fillAmount = 0f;
+            }
+        }
+        
+        // Continue charging while button is held
+        if (isCharging)
+        {
+            currentChargeTime += Time.deltaTime;
+            currentChargeTime = Mathf.Min(currentChargeTime, chargeTime);
+            
+            // Update charge bar
+            if (chargeBar != null && showChargeBar)
+            {
+                chargeBar.fillAmount = (currentChargeTime / chargeTime);
+                chargeText.text = $"{(currentChargeTime / chargeTime * 100):F0}";
+            }
+        }
+
+        // Release the throw when button is released
+        if (throwAction.WasReleasedThisFrame() && isCharging)
+        {
+            float chargePercentage = currentChargeTime / chargeTime;
+            float throwForce = Mathf.Lerp(minThrowForce, maxThrowForce, chargePercentage);
+            ThrowProjectile(throwForce);
+            drunkenessBar.value += chargeBar.fillAmount * 100;
+            drunkenessText.text = $"{drunkenessBar.value:F0}";
+            isCharging = false;
+            
+            // Hide charge bar after throwing
+            if (chargeBar != null)
+            {
+                chargeBar.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void ThrowProjectile(float force)
+    {
+        GameObject projectile = Instantiate(Bottle);
+        projectile.transform.position = transform.position + Vector3.up + Camera.main.transform.forward * 2f;        
+        // Use camera's forward direction for throwing
+        Vector3 throwDirection = Camera.main.transform.forward;
+        
+        Rigidbody projectileRb = projectile.AddComponent<Rigidbody>();
+        projectileRb.AddForce(throwDirection * force, ForceMode.Impulse);
+        
+        Destroy(projectile, 3f);
+    }
+}

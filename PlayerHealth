@@ -1,0 +1,54 @@
+using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class PlayerHealth : MonoBehaviour
+{
+
+    public GameObject HealthPack;
+    public GameObject Bottle;
+    public ThrowBehavior throwScript;
+
+    // Initialize the player's health and update the health bar
+    private void Start()
+    {
+        throwScript = GameObject.FindObjectOfType<ThrowBehavior>();
+    }
+
+    // Check for game over conditions every frame
+    private void Update()
+    {
+        if(throwScript.drunkenessBar.value >= 1000) 
+        {
+            KO();
+        }
+    }
+
+    // Handle collisions with other objects
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Check if the collision is with a zombie
+        if (collision.gameObject.CompareTag("Bottle"))
+        {
+            KO();
+        }
+
+       
+        // Check if the collision is with a health pack
+        /*if (collision.gameObject.CompareTag("HealthPack"))
+        {
+            Revive();  
+        }*/
+    }
+
+    // Heal the player by a specified amount
+    public void Revive()
+    {
+    }
+
+
+    // Trigger game over functionality when the player dies
+    private void KO()
+    {
+    }
+}

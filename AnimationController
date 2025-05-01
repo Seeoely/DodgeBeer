@@ -1,0 +1,76 @@
+using UnityEngine;
+using System.Collections;
+using UnityEngine.InputSystem;
+
+public class AnimationController : MonoBehaviour
+{
+    private Rigidbody[] ragdollBodies;
+    private Animator animator;
+    private CharacterController controller;
+
+    private void Start()
+    {
+        ragdollBodies = GetComponentsInChildren<Rigidbody>(); // Get all rigidbodies in the ragdoll
+        animator = GetComponent<Animator>();
+        controller = GetComponent<CharacterController>();
+
+        DisableRagdoll(); // Start with ragdoll disabled
+    }
+
+    private void Update()
+    {
+        UpdateAnimation();
+        UnityEngine.Debug.Log(controller.velocity.x);
+    }
+
+    private void UpdateAnimation()
+    {
+        if (Mathf.Abs(controller.velocity.x) > 0.1f || Mathf.Abs(controller.velocity.z) > 0.1f)
+        {
+            animator.SetBool("Moving", true);
+        }
+        else
+        {
+            animator.SetBool("Moving", false);
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Check if the colliding object is the bottle
+        if (collision.gameObject.CompareTag("Bottle"))
+        {
+            // Calculate force direction from the collision
+            Vector3 force = collision.impulse / Time.fixedDeltaTime;
+            
+            // Enable ragdoll with the collision force
+            EnableRagdoll(force);
+        }
+    }
+
+    public void EnableRagdoll(Vector3 force)
+    {
+        animator.enabled = false; // Disable animation to avoid conflicts
+
+        foreach (Rigidbody rb in ragdollBodies)
+        {
+            rb.isKinematic = false; // Enable physics on all limbs
+        }
+
+        // Apply force to the main body part (hips usually work best)
+        if (ragdollBodies.Length > 0)
+        {
+            Rigidbody mainBody = ragdollBodies[0]; // Usually the hips or pelvis
+            mainBody.AddForce(force, ForceMode.Impulse); // Apply a strong force
+        }
+    }
+
+    public void DisableRagdoll()
+    {
+        foreach (Rigidbody rb in ragdollBodies)
+        {
+            rb.isKinematic = true; // Disable physics
+        }
+        animator.enabled = true; // Re-enable animation
+    }
+}
